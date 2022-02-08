@@ -77,12 +77,16 @@ const group = new THREE.Group();
 scene.add(group);
 
 const testSphere = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16));
-//scene.add(testSphere);
+
 
 const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
 boundingBox.material.blending = THREE.AdditiveBlending;
 boundingBox.material.transparent = true;
 group.add(boundingBox);
+
+console.log(boundingBox)
+
+gui.add(boundingBox.material, 'opacity', 0, 1, 0.01 ).name('boundingBoxOpacity')
 
 const segments = maxParticles * maxParticles;
 const positions = new Float32Array(segments * 3); //one position for each triangle corner - this is for the line geometry 
