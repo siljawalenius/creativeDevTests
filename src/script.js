@@ -1,11 +1,8 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import * as GUI from "lil-gui";
-import { GeometryUtils, LineSegments, SphereGeometry } from "three";
+import GUI from "lil-gui";
 
-// Debug
-//const gui = new GUI();
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -25,7 +22,7 @@ const camera = new THREE.PerspectiveCamera(
   45,
   window.innerWidth / window.innerHeight,
   1,
-  4000
+  5000
 );
 camera.position.z = 1750;
 scene.add(camera);
@@ -53,13 +50,31 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
+
+// Debug
+const gui = new GUI();
+
+
+const radius = 600; //length of each side of geometry
+const maxParticles = 1000; //max number of points
+
+const params = {
+  numParticles : 450, //number of particles currently visible
+  maxDistance : 250 //max distancne two pointns cann be and still be connected
+}
+
+gui.add(params, 'maxDistance', 10, 400, 1)
+gui.add(params, 'numParticles', 0, maxParticles, 1).onFinishChange(
+  (value) =>{
+    particles.setDrawRange(0, value)
+  }
+
+)
+
+
+
 const group = new THREE.Group();
 scene.add(group);
-
-const radius = 300; //length of each side of geometry
-const maxPoints = 1000; //max number of points
-let numParticles = 100;
-const minDistance = 70;
 
 const testSphere = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16));
 //scene.add(testSphere);
@@ -69,19 +84,18 @@ boundingBox.material.blending = THREE.AdditiveBlending;
 boundingBox.material.transparent = true;
 group.add(boundingBox);
 
-const segments = maxPoints * maxPoints;
-const positions = new Float32Array(segments * 3); //one position for each triangle corner
-const colors = new Float32Array(segments * 3); //save line colors
-const particlePositions = new Float32Array(maxPoints * 3); // set a position to each particle
+const segments = maxParticles * maxParticles;
+const positions = new Float32Array(segments * 3); //one position for each triangle corner - this is for the line geometry 
+const colors = new Float32Array(segments * 3); //save line colors / opacities 
+const particlePositions = new Float32Array(maxParticles * 3); // set a position to each particle - for points
 const particlesData = [];
 
 const particles = new THREE.BufferGeometry();
 
 //populate particles array
-for (let i = 0; i < maxPoints; i++) {
+for (let i = 0; i < maxParticles; i++) {
   const i3 = i * 3;
-  const randVal = Math.random();
-  particlePositions[i3] = (randVal - 0.5) * 2 * radius; //x position
+  particlePositions[i3] = (Math.random() - 0.5) * 2 * radius; //x position
   particlePositions[i3 + 1] = (Math.random() - 0.5) * 2 * radius; //y position
   particlePositions[i3 + 2] = (Math.random() - 0.5) * 2 * radius; //z position
 
@@ -92,20 +106,20 @@ for (let i = 0; i < maxPoints; i++) {
       (-1 + Math.random() * 2) * 2,
       (-1 + Math.random() * 2) * 2
     ),
-    numConnections: 0,
+    numConnections: 0, //each particle starts with no connections 
   });
 }
 
 //create points geometry
 const pointMaterial = new THREE.PointsMaterial({
   color: 0xffffff,
-  size: 5,
+  size: 2,
   blending: THREE.AdditiveBlending,
   transparent: true,
-  sizeAttenuation: true,
+  sizeAttenuation: false,
 });
 
-particles.setDrawRange(0, numParticles); //only display the selected amount of particles
+particles.setDrawRange(0, params.numParticles); //only display the selected amount of particles
 
 particles.setAttribute(
   "position",
@@ -121,7 +135,7 @@ const linesGeometry = new THREE.BufferGeometry();
 
 linesGeometry.setAttribute(
   "position",
-  new THREE.BufferAttribute(particlePositions, 3).setUsage(
+  new THREE.BufferAttribute(positions, 3).setUsage(
     THREE.DynamicDrawUsage
   )
 ); //set position attribute
@@ -131,11 +145,11 @@ linesGeometry.setAttribute(
 // ); //set color attribute
 
 linesGeometry.computeBoundingSphere();
-linesGeometry.setDrawRange(0, 0);
+linesGeometry.setDrawRange(0, 0); //init at a draw range of 0 , so no lines show up 
 
 const linesMaterial = new THREE.LineBasicMaterial({
   color: 0x808080,
-  linewidth: 1,
+  opacity: 0.3,
   //vertexColors: true,
   blending: THREE.AdditiveBlending,
   transparent: true,
@@ -155,7 +169,6 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-//renderer.setClearColor(new THREE.Color('#ff0000'))
 
 /**
  * Animate
@@ -164,16 +177,15 @@ const tick = () => {
   // Update controls
   controls.update();
 
-  let vertexpos = 0;
-  let colorpos = 0;
-  let numConnected = 0;
+  let vertexpos = 0; //initially, no lines are rendered 
+  let colorpos = 0; 
+  let lineConnections = 0; //initially, zero points connected
 
-  for (let i = 0; i < numParticles; i++) {
-    particlesData[i].numConnections = 0;
-  }
-  for (let i = 0; i < numParticles; i++) {
+  for (let i = 0; i < params.numParticles; i++) {
+    particlesData[i].numConnections = 0; //reset number of connections to each particle to 0 
     const i3 = i * 3; //store position in array
-    const particleData = particlesData[i];
+    const particleData = particlesData[i]; //save particle data of current particle 
+
     particlePositions[i3] += particleData.velocity.x; //move the particle in x
     particlePositions[i3 + 1] += particleData.velocity.y; //move in y
     particlePositions[i3 + 2] += particleData.velocity.z; // move in z
@@ -194,9 +206,8 @@ const tick = () => {
       particleData.velocity.z = -particleData.velocity.z; //if particle exits the square in z, flip the velocity
     }
 
-    for (let j = i + 1; j < numParticles; j++) {
+    for (let j = i + 1; j < params.numParticles; j++) {
       //every particle before i has already been checked
-
       const secondParticleData = particlesData[j];
       const j3 = j * 3;
       const distX = particlePositions[i3] - particlePositions[j3];
@@ -207,28 +218,29 @@ const tick = () => {
         distX * distX + distY * distY + distZ * distZ
       ); //calculate distance between points
 
-      if (totalDist < minDistance) {
-        particleData.numConnections++;
+      if (totalDist < params.maxDistance) {
+        //if dist is less thann the min distance needed
+        particleData.numConnections++; //add a connection to first particle 
         secondParticleData.numConnections++; //if particles are close enough to be connected, connect them
 
-        //update lie position
+        //update line position
 
-        positions[vertexpos++] = particlePositions[i3];
-        positions[vertexpos++] = particlePositions[i3 + 1];
-        positions[vertexpos++] = particlePositions[i3 + 2]; //add co-ords of first point to positionns array
+        //add co-ords of first point to positionns array
+        positions[vertexpos++] = particlePositions[i3]; //x position 
+        positions[vertexpos++] = particlePositions[i3 + 1]; //y
+        positions[vertexpos++] = particlePositions[i3 + 2]; //z
 
-        positions[vertexpos++] = particlePositions[j3];
-        positions[vertexpos++] = particlePositions[j3 + 1];
-        positions[vertexpos++] = particlePositions[j3 + 2]; //add co-ords of second point to positionns array
+        //add co-ords of second point to positionns array
+        positions[vertexpos++] = particlePositions[j3]; //x2
+        positions[vertexpos++] = particlePositions[j3 + 1]; //y2
+        positions[vertexpos++] = particlePositions[j3 + 2]; //z2
 
-        numConnected++; //update number of connections to first point
+        lineConnections++; //update number of connections total within this frame
       }
     }
   }
 
-  console.log(numConnected)
-
-  linesShape.geometry.setDrawRange(0, numConnected*2)
+  linesShape.geometry.setDrawRange(0, 2 * lineConnections)
   linesShape.geometry.attributes.position.needsUpdate = true
 
   pointCloud.geometry.attributes.position.needsUpdate = true;
