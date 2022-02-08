@@ -1,7 +1,7 @@
 import GUI from "lil-gui";
 import { maxParticles, params } from './constants'
 
-const initGUI = ({ boundingBox, pointCloud, linesShape}) => {
+const initGUI = ({ boundingBox, pointCloud, linesShape}, particles) => {
   // Debug
   const gui = new GUI();
   // gui.add(camera.position, "x", 0, 2000, 0.001).name("cameraX");
@@ -12,7 +12,10 @@ const initGUI = ({ boundingBox, pointCloud, linesShape}) => {
   gui
     .add(params, "numParticles", 0, maxParticles, 1)
     .onFinishChange((value) => {
-      particles.setDrawRange(0, value);
+        if (particles){ //avoids error of "no particles"
+            particles.setDrawRange(0, value);
+        }
+      
     });
   gui.add(params, "particleSpeed", 0.2, 4, 0.001);
 

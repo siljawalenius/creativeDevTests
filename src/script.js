@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {params, radius, maxParticles} from './constants'
 import initGUI from './functions'
+import GUI from "lil-gui";
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -64,6 +65,7 @@ const testSphere = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16));
 testSphere.material.wireframe = true;
 testSphere.material.transparent = true;
 testSphere.material.opacity = 0.03;
+console.log(testSphere.material)
 group.add(testSphere); //adding a sphere to give more of a rounded shape
 
 const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
@@ -158,8 +160,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-initGUI({params, maxParticles, boundingBox, pointCloud, linesShape});
-
+initGUI({boundingBox, pointCloud, linesShape}, particles);
 
 
 /**
