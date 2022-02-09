@@ -1,9 +1,8 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import {params, radius, maxParticles} from './constants'
+import {params, maxParticles} from './constants'
 import initGUI from './functions'
-import GUI from "lil-gui";
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -61,10 +60,11 @@ const pointTexture = textureLoader.load("/textures/1.png");
 const group = new THREE.Group();
 scene.add(group);
 
-const testSphere = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16));
+const testSphere = new THREE.Mesh(new THREE.SphereGeometry(params.radius, 32, 16));
 testSphere.material.wireframe = true;
 testSphere.material.transparent = true;
 testSphere.material.opacity = 0.03;
+testSphere.material.blending = THREE.AdditiveBlending
 console.log(testSphere.material)
 group.add(testSphere); //adding a sphere to give more of a rounded shape
 
@@ -72,7 +72,7 @@ const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
 boundingBox.material.blending = THREE.AdditiveBlending;
 boundingBox.material.transparent = true;
 boundingBox.material.opacity = 0.1;
-group.add(boundingBox);
+//group.add(boundingBox);
 
 const segments = maxParticles * maxParticles;
 const positions = new Float32Array(segments * 3); //one position for each triangle corner - this is for the line geometry
@@ -85,9 +85,9 @@ const particles = new THREE.BufferGeometry();
 //populate particles array
 for (let i = 0; i < maxParticles; i++) {
   const i3 = i * 3;
-  particlePositions[i3] = (Math.random() - 0.5) * 2 * radius; //x position
-  particlePositions[i3 + 1] = (Math.random() - 0.5) * 2 * radius; //y position
-  particlePositions[i3 + 2] = (Math.random() - 0.5) * 2 * radius; //z position
+  particlePositions[i3] = (Math.random() - 0.5) * 2 * params.radius; //x position
+  particlePositions[i3 + 1] = (Math.random() - 0.5) * 2 * params.radius; //y position
+  particlePositions[i3 + 2] = (Math.random() - 0.5) * 2 * params.radius; //z position
 
   // add data to data array
   particlesData.push({
@@ -103,7 +103,7 @@ for (let i = 0; i < maxParticles; i++) {
 //create points geometry
 const pointMaterial = new THREE.PointsMaterial({
   color: 0xffffff,
-  size: 5,
+  size: 7,
   blending: THREE.AdditiveBlending,
   transparent: true,
   sizeAttenuation: false,
@@ -150,6 +150,7 @@ const linesMaterial = new THREE.LineBasicMaterial({
 const linesShape = new THREE.Line(linesGeometry, linesMaterial);
 group.add(linesShape);
 
+
 /**
  * Renderer
  */
@@ -159,6 +160,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(new THREE.Color(0xFC9797))
 
 initGUI({boundingBox, pointCloud, linesShape}, particles);
 
@@ -169,9 +171,13 @@ initGUI({boundingBox, pointCloud, linesShape}, particles);
 
 const clock = new THREE.Clock();
 let lastElapsedTime = 0;
+let countTime = 0 
+let currentScale = 1.0
 
 const tick = () => {
+
   const elapsedTime = clock.getElapsedTime();
+  const deltaTime = elapsedTime - lastElapsedTime;
   lastElapsedTime = elapsedTime;
 
   // Update controls
@@ -190,18 +196,18 @@ const tick = () => {
     particlePositions[i3 + 1] += particleData.velocity.y * params.particleSpeed; //move in y
     particlePositions[i3 + 2] += particleData.velocity.z * params.particleSpeed; // move in z
 
-    if (particlePositions[i3] < -radius || particlePositions[i3] > radius) {
+    if (particlePositions[i3] < -params.radius || particlePositions[i3] > params.radius) {
       particleData.velocity.x = -particleData.velocity.x; //if particle exits the square in x, flip the velocity
     }
     if (
-      particlePositions[i3 + 1] < -radius ||
-      particlePositions[i3 + 1] > radius
+      particlePositions[i3 + 1] < -params.radius ||
+      particlePositions[i3 + 1] > params.radius
     ) {
       particleData.velocity.y = -particleData.velocity.y; //if particle exits the square in y, flip the velocity
     }
     if (
-      particlePositions[i3 + 2] < -radius ||
-      particlePositions[i3 + 2] > radius
+      particlePositions[i3 + 2] < -params.radius ||
+      particlePositions[i3 + 2] > params.radius
     ) {
       particleData.velocity.z = -particleData.velocity.z; //if particle exits the square in z, flip the velocity
     }
@@ -262,13 +268,28 @@ const tick = () => {
     }
   }
 
+  const breathCycleTime = params.inhaleLength + params.exhaleLength + 2 * params.holdLength
+  countTime += deltaTime
+  //inhale, hold, exhale, hold 
+
+  if ( countTime < params.inhaleLength){
+    group.scale.set(1.2, 1.2, 1.2)
+    //use GSAP TO MAKE SCALE SLOW 
+  } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
+    group.scale.set(0.3, 0.3, 0.3)
+    // USE GSAP HERE
+  }
+
+//reset count time when breath cucle ends
+  countTime >= breathCycleTime ? countTime = 0 : null
+
   linesShape.geometry.setDrawRange(0, 2 * lineConnections);
   linesShape.geometry.attributes.position.needsUpdate = true;
   linesShape.geometry.attributes.color.needsUpdate = true;
   pointCloud.geometry.attributes.position.needsUpdate = true;
 
   //rotate whole shape slowly
-  group.rotation.y = elapsedTime * 0.3;
+  group.rotation.y = elapsedTime * 0.1;
 
   // Render
   renderer.render(scene, camera);

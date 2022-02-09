@@ -15,7 +15,6 @@ const initGUI = ({ boundingBox, pointCloud, linesShape}, particles) => {
         if (particles){ //avoids error of "no particles"
             particles.setDrawRange(0, value);
         }
-      
     });
   gui.add(params, "particleSpeed", 0.2, 4, 0.001);
 
@@ -29,6 +28,12 @@ const initGUI = ({ boundingBox, pointCloud, linesShape}, particles) => {
   gui.add(pointCloud.material, "size", 0, 10, 0.001).name("pointSize");
 
   gui.add(linesShape.material, "opacity", 0, 1, 0.001).name("linesOpacity");
+
+  gui.add(params, 'radius', 200, 600, 1)
+
+  gui.add(params,'inhaleLength', 0, 10, 0.5)
+  gui.add(params,'exhaleLength', 0, 10, 0.5)
+  gui.add(params,'holdLength', 0, 10, 0.5)
 };
 
 export default initGUI; 
