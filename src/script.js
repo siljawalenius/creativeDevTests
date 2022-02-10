@@ -1,11 +1,16 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import {params, maxParticles} from './constants'
-import initGUI from './functions'
-import planeVertexShader from './shader/plane/vertex.glsl'
-import planeFragmentShader from './shader/plane/fragment.glsl'
+import { params, maxParticles } from "./constants";
+import initGUI from "./functions";
+import planeVertexShader from "./shader/plane/vertex.glsl";
+import planeFragmentShader from "./shader/plane/fragment.glsl";
 
+import { Line2 } from "./lines/Line2.js";
+import { LineMaterial } from "./lines/LineMaterial.js";
+import { LineGeometry } from "./lines/LineGeometry.js";
+
+import {gsap} from 'gsap'; 
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -63,11 +68,13 @@ const pointTexture = textureLoader.load("/textures/1.png");
 const group = new THREE.Group();
 scene.add(group);
 
-const testSphere = new THREE.Mesh(new THREE.SphereGeometry(params.radius, 32, 16));
+const testSphere = new THREE.Mesh(
+  new THREE.SphereGeometry(params.radius, 32, 16)
+);
 testSphere.material.wireframe = true;
 testSphere.material.transparent = true;
 testSphere.material.opacity = 0.03;
-testSphere.material.blending = THREE.AdditiveBlending
+testSphere.material.blending = THREE.AdditiveBlending;
 group.add(testSphere); //adding a sphere to give more of a rounded shape
 
 const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
@@ -124,6 +131,9 @@ particles.setAttribute(
 const pointCloud = new THREE.Points(particles, pointMaterial);
 group.add(pointCloud);
 
+
+
+
 //now create lines geometry
 const linesGeometry = new THREE.BufferGeometry();
 
@@ -139,7 +149,7 @@ linesGeometry.setAttribute(
 linesGeometry.computeBoundingSphere();
 linesGeometry.setDrawRange(0, 0); //init at a draw range of 0 , so no lines show up
 
-const linesMaterial = new THREE.LineBasicMaterial({
+const thinLinesMaterial = new THREE.LineBasicMaterial({
   color: 0x808080,
   opacity: params.lineOpacity,
   vertexColors: true,
@@ -147,11 +157,25 @@ const linesMaterial = new THREE.LineBasicMaterial({
   transparent: true,
 });
 
-//example uses lineSegments - I'm using lines
+//rewrite line material to gave thickness
+const linesMaterial = new LineMaterial({
+  color: 0x808080,
+  opacity: params.lineOpacity,
+  linewidth: 1,
+  vertexColors: true,
+  blending: THREE.AdditiveBlending,
+  dashed: false,
+  alphaToCoverage: false,
+  transparent: true,
+})
 
-const linesShape = new THREE.Line(linesGeometry, linesMaterial);
+console.log(linesMaterial)
+//console.log(thinLinesMaterial)
+
+//const linesShape = new THREE.Line(linesGeometry, linesMaterial);
+const linesShape = new THREE.Line(linesGeometry, thinLinesMaterial)
+
 group.add(linesShape);
-
 
 /**
  * Renderer
@@ -162,42 +186,71 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(new THREE.Color(0xFC9797))
-
-initGUI({boundingBox, pointCloud, linesShape}, particles);
+renderer.setClearColor(new THREE.Color(0xfc9797));
 
 
-const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32)
+
+
+
+
+initGUI({ boundingBox, pointCloud, linesShape }, particles);
+
+const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
 
 // Material
 const planeMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    time: {value: 1.0}
+    time: { value: 1.0 },
   },
   vertexShader: planeVertexShader,
   fragmentShader: planeFragmentShader,
   side: THREE.DoubleSide,
-  transparent: true
-})
+  transparent: true,
+});
 
-const shaderPlane = new THREE.Mesh(planeGeometry, planeMaterial)
+const shaderPlane = new THREE.Mesh(planeGeometry, planeMaterial);
 shaderPlane.position.z = -600;
 
-scene.add(shaderPlane)
-console.log(shaderPlane)
+scene.add(shaderPlane);
 
 /**
  * Animate
  */
 
+const inhale = () =>{ 
+  gsap.to(group.scale, {
+    x: 1.2,
+    y: 1.2,
+    z: 1.2,
+    duration: params.inhaleLength,
+    ease: "power3.out"
+  })
+}
+const exhale = () =>{
+  gsap.to(group.scale, {
+    x: 0.5,
+    y: 0.5,
+    z: 0.5,
+    duration: params.inhaleLength,
+    ease: "power3.out"
+  })
+}
+
+  // if ( countTime < params.inhaleLength){
+  //   group.scale.set(1.2, 1.2, 1.2)
+  //   //use GSAP TO MAKE SCALE SLOW
+  // } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
+  //   group.scale.set(0.3, 0.3, 0.3)
+  //   // USE GSAP HERE
+  // }
+
+
 const clock = new THREE.Clock();
 let lastElapsedTime = 0;
-let countTime = 0 
-let currentScale = 1.0
-
+let countTime = 0;
+let currentScale = 1.0;
 
 const tick = () => {
-
   const elapsedTime = clock.getElapsedTime();
   const deltaTime = elapsedTime - lastElapsedTime;
   lastElapsedTime = elapsedTime;
@@ -218,7 +271,10 @@ const tick = () => {
     particlePositions[i3 + 1] += particleData.velocity.y * params.particleSpeed; //move in y
     particlePositions[i3 + 2] += particleData.velocity.z * params.particleSpeed; // move in z
 
-    if (particlePositions[i3] < -params.radius || particlePositions[i3] > params.radius) {
+    if (
+      particlePositions[i3] < -params.radius ||
+      particlePositions[i3] > params.radius
+    ) {
       particleData.velocity.x = -particleData.velocity.x; //if particle exits the square in x, flip the velocity
     }
     if (
@@ -290,20 +346,23 @@ const tick = () => {
     }
   }
 
-  const breathCycleTime = params.inhaleLength + params.exhaleLength + 2 * params.holdLength
-  countTime += deltaTime
-  //inhale, hold, exhale, hold 
+  const breathCycleTime =
+    params.inhaleLength + params.exhaleLength + 2 * params.holdLength;
+  countTime += deltaTime;
+  //inhale, hold, exhale, hold
 
-  // if ( countTime < params.inhaleLength){
-  //   group.scale.set(1.2, 1.2, 1.2)
-  //   //use GSAP TO MAKE SCALE SLOW 
-  // } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
-  //   group.scale.set(0.3, 0.3, 0.3)
-  //   // USE GSAP HERE
-  // }
+  if ( countTime < params.inhaleLength){
+    inhale()
+    //group.scale.set(1.2, 1.2, 1.2)
+    //use GSAP TO MAKE SCALE SLOW
+  } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
+    exhale()
+    //group.scale.set(0.3, 0.3, 0.3)
+    // USE GSAP HERE
+  }
 
-//reset count time when breath cucle ends
-  countTime >= breathCycleTime ? countTime = 0 : null
+  //reset count time when breath cucle ends
+  countTime >= breathCycleTime ? (countTime = 0) : null;
 
   linesShape.geometry.setDrawRange(0, 2 * lineConnections);
   linesShape.geometry.attributes.position.needsUpdate = true;
