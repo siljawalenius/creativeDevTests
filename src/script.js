@@ -3,6 +3,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {params, maxParticles} from './constants'
 import initGUI from './functions'
+import planeVertexShader from './shader/plane/vertex.glsl'
+import planeFragmentShader from './shader/plane/fragment.glsl'
+
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -65,7 +68,6 @@ testSphere.material.wireframe = true;
 testSphere.material.transparent = true;
 testSphere.material.opacity = 0.03;
 testSphere.material.blending = THREE.AdditiveBlending
-console.log(testSphere.material)
 group.add(testSphere); //adding a sphere to give more of a rounded shape
 
 const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
@@ -165,6 +167,25 @@ renderer.setClearColor(new THREE.Color(0xFC9797))
 initGUI({boundingBox, pointCloud, linesShape}, particles);
 
 
+const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32)
+
+// Material
+const planeMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    time: {value: 1.0}
+  },
+  vertexShader: planeVertexShader,
+  fragmentShader: planeFragmentShader,
+  side: THREE.DoubleSide,
+  transparent: true
+})
+
+const shaderPlane = new THREE.Mesh(planeGeometry, planeMaterial)
+shaderPlane.position.z = -600;
+
+scene.add(shaderPlane)
+console.log(shaderPlane)
+
 /**
  * Animate
  */
@@ -173,6 +194,7 @@ const clock = new THREE.Clock();
 let lastElapsedTime = 0;
 let countTime = 0 
 let currentScale = 1.0
+
 
 const tick = () => {
 
@@ -272,13 +294,13 @@ const tick = () => {
   countTime += deltaTime
   //inhale, hold, exhale, hold 
 
-  if ( countTime < params.inhaleLength){
-    group.scale.set(1.2, 1.2, 1.2)
-    //use GSAP TO MAKE SCALE SLOW 
-  } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
-    group.scale.set(0.3, 0.3, 0.3)
-    // USE GSAP HERE
-  }
+  // if ( countTime < params.inhaleLength){
+  //   group.scale.set(1.2, 1.2, 1.2)
+  //   //use GSAP TO MAKE SCALE SLOW 
+  // } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
+  //   group.scale.set(0.3, 0.3, 0.3)
+  //   // USE GSAP HERE
+  // }
 
 //reset count time when breath cucle ends
   countTime >= breathCycleTime ? countTime = 0 : null
@@ -291,6 +313,8 @@ const tick = () => {
   //rotate whole shape slowly
   group.rotation.y = elapsedTime * 0.1;
 
+  //UPDATE GRADIENT MATERIAL TIME
+  planeMaterial.uniforms.time.value = elapsedTime;
   // Render
   renderer.render(scene, camera);
   // Call tick again on the next frame
