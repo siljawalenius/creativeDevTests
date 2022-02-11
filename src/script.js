@@ -1,5 +1,6 @@
 import "./style.css";
 import * as THREE from "three";
+import { MeshLine, MeshLineMaterial } from 'three.meshline';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { params, maxParticles } from "./constants";
 import initGUI from "./functions";
@@ -10,7 +11,7 @@ import { Line2 } from "./lines/Line2.js";
 import { LineMaterial } from "./lines/LineMaterial.js";
 import { LineGeometry } from "./lines/LineGeometry.js";
 
-import {gsap} from 'gsap'; 
+import { gsap } from "gsap";
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -30,7 +31,7 @@ const camera = new THREE.PerspectiveCamera(
   45,
   window.innerWidth / window.innerHeight,
   1,
-  5000
+  8000
 );
 camera.position.z = 1150;
 camera.position.y = 574;
@@ -39,6 +40,7 @@ camera.lookAt(0, 0, 0);
 scene.add(camera);
 
 const light = new THREE.AmbientLight();
+light.position.set(0,0,0)
 scene.add(light);
 
 // Controls
@@ -69,19 +71,17 @@ const group = new THREE.Group();
 scene.add(group);
 
 const testSphere = new THREE.Mesh(
-  new THREE.SphereGeometry(params.radius, 32, 16)
+  new THREE.SphereGeometry(params.radius, 32, 16),
+  new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.03,
+    blending: THREE.AdditiveBlending
+  })
 );
-testSphere.material.wireframe = true;
-testSphere.material.transparent = true;
-testSphere.material.opacity = 0.03;
-testSphere.material.blending = THREE.AdditiveBlending;
-group.add(testSphere); //adding a sphere to give more of a rounded shape
-
+//group.add(testSphere); //adding a sphere to give more of a rounded shape
 const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
-boundingBox.material.blending = THREE.AdditiveBlending;
-boundingBox.material.transparent = true;
-boundingBox.material.opacity = 0.1;
-//group.add(boundingBox);
 
 const segments = maxParticles * maxParticles;
 const positions = new Float32Array(segments * 3); //one position for each triangle corner - this is for the line geometry
@@ -94,9 +94,9 @@ const particles = new THREE.BufferGeometry();
 //populate particles array
 for (let i = 0; i < maxParticles; i++) {
   const i3 = i * 3;
-  particlePositions[i3] = (Math.random() - 0.5) * 2 * params.radius; //x position
+  particlePositions[i3] = Math.sin((Math.random() - 0.5) * 2) * params.radius; //x position
   particlePositions[i3 + 1] = (Math.random() - 0.5) * 2 * params.radius; //y position
-  particlePositions[i3 + 2] = (Math.random() - 0.5) * 2 * params.radius; //z position
+  particlePositions[i3 + 2] = Math.cos((Math.random() - 0.5) * 2) * params.radius;  //z position
 
   // add data to data array
   particlesData.push({
@@ -131,9 +131,6 @@ particles.setAttribute(
 const pointCloud = new THREE.Points(particles, pointMaterial);
 group.add(pointCloud);
 
-
-
-
 //now create lines geometry
 const linesGeometry = new THREE.BufferGeometry();
 
@@ -150,32 +147,47 @@ linesGeometry.computeBoundingSphere();
 linesGeometry.setDrawRange(0, 0); //init at a draw range of 0 , so no lines show up
 
 const thinLinesMaterial = new THREE.LineBasicMaterial({
-  color: 0x808080,
+  color: 0xffffff,
+  linewidth: 5,
   opacity: params.lineOpacity,
   vertexColors: true,
   blending: THREE.AdditiveBlending,
   transparent: true,
 });
+const linesShape = new THREE.Line(linesGeometry, thinLinesMaterial);
+linesShape.computeLineDistances()
+group.add(linesShape);
 
 //rewrite line material to gave thickness
-const linesMaterial = new LineMaterial({
-  color: 0x808080,
-  opacity: params.lineOpacity,
-  linewidth: 1,
-  vertexColors: true,
-  blending: THREE.AdditiveBlending,
-  dashed: false,
-  alphaToCoverage: false,
-  transparent: true,
-})
+// const linesMaterial = new LineMaterial({
+//   color: 0xffffff,
+//   linewidth: 5,
+//   //vertexColors: true,
+//   //blending: THREE.AdditiveBlending,
+//   dashed: false,
+//   alphaToCoverage: false,
+//   transparent: true,
+// });
+// const linesShape = new Line2(linesGeometry, linesMaterial);
+// linesShape.computeLineDistances()
+// group.add(linesShape);
 
-console.log(linesMaterial)
-//console.log(thinLinesMaterial)
 
-//const linesShape = new THREE.Line(linesGeometry, linesMaterial);
-const linesShape = new THREE.Line(linesGeometry, thinLinesMaterial)
 
-group.add(linesShape);
+//test using meshlines
+// const lines = new MeshLine()
+// lines.setPoints(linesGeometry)
+// const meshLineMaterial = new MeshLineMaterial({
+//   color: new THREE.Color(0xffffff),
+//   opacity: params.lineOpacity,
+//   lineWidth: 3,
+//   depthWrite: false,
+//   transparent: true,
+//   side: THREE.DoubleSide
+// })
+// const linesMesh = new THREE.Mesh(lines, meshLineMaterial)
+// scene.add(linesMesh)
+
 
 /**
  * Renderer
@@ -186,16 +198,13 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(new THREE.Color(0xfc9797));
-
-
-
-
-
+renderer.setClearColor(new THREE.Color(0xFC9797));
 
 initGUI({ boundingBox, pointCloud, linesShape }, particles);
 
-const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
+//const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
+//const sceneGeometry = new THREE.SphereGeometry(3000, 32, 32)
+const sceneGeometry = new THREE.PlaneGeometry(1000, 1000, 16, 16)
 
 // Material
 const planeMaterial = new THREE.ShaderMaterial({
@@ -206,49 +215,39 @@ const planeMaterial = new THREE.ShaderMaterial({
   fragmentShader: planeFragmentShader,
   side: THREE.DoubleSide,
   transparent: true,
+  depthWrite: false
 });
 
-const shaderPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-shaderPlane.position.z = -600;
+const shaderPlane = new THREE.Mesh(sceneGeometry, planeMaterial);
 
-scene.add(shaderPlane);
+//scene.add(shaderPlane);
 
 /**
  * Animate
  */
 
-const inhale = () =>{ 
+const inhale = () => {
   gsap.to(group.scale, {
-    x: 1.2,
-    y: 1.2,
-    z: 1.2,
+    x: 1.5,
+    y: 1.5,
+    z: 1.5,
     duration: params.inhaleLength,
-    ease: "power3.out"
-  })
-}
-const exhale = () =>{
+    ease: "none",
+  });
+};
+const exhale = () => {
   gsap.to(group.scale, {
     x: 0.5,
     y: 0.5,
     z: 0.5,
-    duration: params.inhaleLength,
-    ease: "power3.out"
-  })
-}
-
-  // if ( countTime < params.inhaleLength){
-  //   group.scale.set(1.2, 1.2, 1.2)
-  //   //use GSAP TO MAKE SCALE SLOW
-  // } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
-  //   group.scale.set(0.3, 0.3, 0.3)
-  //   // USE GSAP HERE
-  // }
-
+    duration: params.exhaleLength,
+    ease: "none",
+  });
+};
 
 const clock = new THREE.Clock();
 let lastElapsedTime = 0;
 let countTime = 0;
-let currentScale = 1.0;
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
@@ -346,23 +345,30 @@ const tick = () => {
     }
   }
 
-  const breathCycleTime =
-    params.inhaleLength + params.exhaleLength + 2 * params.holdLength;
   countTime += deltaTime;
   //inhale, hold, exhale, hold
 
-  if ( countTime < params.inhaleLength){
-    inhale()
-    //group.scale.set(1.2, 1.2, 1.2)
-    //use GSAP TO MAKE SCALE SLOW
-  } else if (countTime >= params.inhaleLength + params.holdLength && countTime < breathCycleTime ){
-    exhale()
-    //group.scale.set(0.3, 0.3, 0.3)
-    // USE GSAP HERE
-  }
+  const phase1 = params.inhaleLength;
+  const phase2 = params.inhaleLength + params.holdLength;
+  const phase3 = params.inhaleLength + params.holdLength + params.exhaleLength;
+  const phase4 =
+    params.inhaleLength +
+    params.holdLength +
+    params.exhaleLength +
+    params.holdLength;
 
+  if (countTime < phase1) {
+    inhale();
+  } else if (phase1 <= countTime && countTime <= phase2) {
+    //rotate whole shape slowly
+    group.rotation.y += deltaTime * 0.02;
+  } else if (phase2 < countTime && countTime < phase3) {
+    exhale();
+  } else if (phase3 <= countTime && countTime <= phase4) {
+    group.rotation.y += deltaTime * 0.02;
+  }
   //reset count time when breath cucle ends
-  countTime >= breathCycleTime ? (countTime = 0) : null;
+  countTime >= phase4 ? (countTime = 0) : null;
 
   linesShape.geometry.setDrawRange(0, 2 * lineConnections);
   linesShape.geometry.attributes.position.needsUpdate = true;
@@ -370,8 +376,7 @@ const tick = () => {
   pointCloud.geometry.attributes.position.needsUpdate = true;
 
   //rotate whole shape slowly
-  group.rotation.y = elapsedTime * 0.1;
-
+  group.rotation.y += deltaTime * 0.1;
   //UPDATE GRADIENT MATERIAL TIME
   planeMaterial.uniforms.time.value = elapsedTime;
   // Render
@@ -380,4 +385,15 @@ const tick = () => {
   window.requestAnimationFrame(tick);
 };
 
-tick();
+//tick();
+
+
+const update = () =>{
+    // Update controls
+    controls.update();
+  // Render
+  renderer.render(scene, camera);
+  // Call tick again on the next frame
+  window.requestAnimationFrame(update);
+}
+update()
