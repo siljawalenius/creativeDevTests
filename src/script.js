@@ -1,6 +1,6 @@
 import "./style.css";
 import * as THREE from "three";
-import { MeshLine, MeshLineMaterial } from 'three.meshline';
+import { MeshLine, MeshLineMaterial } from "three.meshline";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { params, maxParticles } from "./constants";
 import initGUI from "./functions";
@@ -40,13 +40,13 @@ camera.lookAt(0, 0, 0);
 scene.add(camera);
 
 const light = new THREE.AmbientLight();
-light.position.set(0,0,0)
+light.position.set(0, 0, 0);
 scene.add(light);
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.minDistance = 1000;
-controls.maxDistance = 3000;
+controls.maxDistance = 2700;
 controls.enableDamping = true;
 
 window.addEventListener("resize", () => {
@@ -70,17 +70,39 @@ const pointTexture = textureLoader.load("/textures/1.png");
 const group = new THREE.Group();
 scene.add(group);
 
+//const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
+const sceneGeometry = new THREE.SphereGeometry(3000, 32, 32);
+//const sceneGeometry = new THREE.PlaneGeometry(1000, 1000, 16, 16)
+
+// Material
+const planeMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    time: { value: 1.0 },
+  },
+  vertexShader: planeVertexShader,
+  fragmentShader: planeFragmentShader,
+  side: THREE.DoubleSide,
+  transparent: true,
+});
+
+const shaderPlane = new THREE.Mesh(sceneGeometry, planeMaterial);
+//shaderPlane.position.z = -2000;
+shaderPlane.rotation.y = Math.PI/2
+scene.add(shaderPlane);
+
 const testSphere = new THREE.Mesh(
   new THREE.SphereGeometry(params.radius, 32, 16),
   new THREE.MeshBasicMaterial({
     color: 0xffffff,
     wireframe: true,
     transparent: true,
-    opacity: 0.03,
-    blending: THREE.AdditiveBlending
+    opacity: 0.01,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    depthTest: false,
   })
 );
-//group.add(testSphere); //adding a sphere to give more of a rounded shape
+group.add(testSphere); //adding a sphere to give more of a rounded shape
 const boundingBox = new THREE.BoxHelper(testSphere, 0x808080);
 
 const segments = maxParticles * maxParticles;
@@ -94,9 +116,22 @@ const particles = new THREE.BufferGeometry();
 //populate particles array
 for (let i = 0; i < maxParticles; i++) {
   const i3 = i * 3;
-  particlePositions[i3] = Math.sin((Math.random() - 0.5) * 2) * params.radius; //x position
-  particlePositions[i3 + 1] = (Math.random() - 0.5) * 2 * params.radius; //y position
-  particlePositions[i3 + 2] = Math.cos((Math.random() - 0.5) * 2) * params.radius;  //z position
+  // particlePositions[i3] = Math.sin((Math.random() - 0.5) * 2) * params.radius; //x position
+  // particlePositions[i3 + 1] = (Math.random() - 0.5) * 2 * params.radius; //y position
+  // particlePositions[i3 + 2] = Math.cos((Math.random() - 0.5) * 2) * params.radius;  //z position
+  const randVal = Math.random();
+  const r = params.radius;
+  const xPos = Math.sin(randVal * 2 * Math.PI) * r * Math.random();
+  const zPos = Math.cos(randVal * 2 * Math.PI) * r * Math.random();
+  const isPos = Math.random() > 0.5 ? 1 : -1;
+  const yPos =
+    Math.sqrt(Math.pow(r, 2) - Math.pow(xPos, 2) - Math.pow(zPos, 2)) *
+    isPos *
+    Math.random();
+
+  particlePositions[i3] = xPos; //x
+  particlePositions[i3 + 1] = yPos; //y
+  particlePositions[i3 + 2] = zPos; //z
 
   // add data to data array
   particlesData.push({
@@ -118,6 +153,7 @@ const pointMaterial = new THREE.PointsMaterial({
   sizeAttenuation: false,
   alphaMap: pointTexture,
   depthWrite: false,
+  depthTest: false,
 });
 
 particles.setDrawRange(0, params.numParticles); //only display the selected amount of particles
@@ -143,7 +179,7 @@ linesGeometry.setAttribute(
   new THREE.BufferAttribute(colors, 3).setUsage(THREE.DynamicDrawUsage)
 ); //set color attribute
 
-linesGeometry.computeBoundingSphere();
+//linesGeometry.computeBoundingSphere();
 linesGeometry.setDrawRange(0, 0); //init at a draw range of 0 , so no lines show up
 
 const thinLinesMaterial = new THREE.LineBasicMaterial({
@@ -155,7 +191,7 @@ const thinLinesMaterial = new THREE.LineBasicMaterial({
   transparent: true,
 });
 const linesShape = new THREE.Line(linesGeometry, thinLinesMaterial);
-linesShape.computeLineDistances()
+linesShape.computeLineDistances();
 group.add(linesShape);
 
 //rewrite line material to gave thickness
@@ -172,8 +208,6 @@ group.add(linesShape);
 // linesShape.computeLineDistances()
 // group.add(linesShape);
 
-
-
 //test using meshlines
 // const lines = new MeshLine()
 // lines.setPoints(linesGeometry)
@@ -188,7 +222,6 @@ group.add(linesShape);
 // const linesMesh = new THREE.Mesh(lines, meshLineMaterial)
 // scene.add(linesMesh)
 
-
 /**
  * Renderer
  */
@@ -198,29 +231,9 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(new THREE.Color(0xFC9797));
+renderer.setClearColor(new THREE.Color(0xfc9797));
 
 initGUI({ boundingBox, pointCloud, linesShape }, particles);
-
-//const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
-//const sceneGeometry = new THREE.SphereGeometry(3000, 32, 32)
-const sceneGeometry = new THREE.PlaneGeometry(1000, 1000, 16, 16)
-
-// Material
-const planeMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    time: { value: 1.0 },
-  },
-  vertexShader: planeVertexShader,
-  fragmentShader: planeFragmentShader,
-  side: THREE.DoubleSide,
-  transparent: true,
-  depthWrite: false
-});
-
-const shaderPlane = new THREE.Mesh(sceneGeometry, planeMaterial);
-
-//scene.add(shaderPlane);
 
 /**
  * Animate
@@ -232,7 +245,7 @@ const inhale = () => {
     y: 1.5,
     z: 1.5,
     duration: params.inhaleLength,
-    ease: "none",
+    ease: "power1.inOut",
   });
 };
 const exhale = () => {
@@ -241,7 +254,7 @@ const exhale = () => {
     y: 0.5,
     z: 0.5,
     duration: params.exhaleLength,
-    ease: "none",
+    ease: "power1.inOut",
   });
 };
 
@@ -270,28 +283,24 @@ const tick = () => {
     particlePositions[i3 + 1] += particleData.velocity.y * params.particleSpeed; //move in y
     particlePositions[i3 + 2] += particleData.velocity.z * params.particleSpeed; // move in z
 
-    if (
-      particlePositions[i3] < -params.radius ||
-      particlePositions[i3] > params.radius
-    ) {
-      particleData.velocity.x = -particleData.velocity.x; //if particle exits the square in x, flip the velocity
-    }
-    if (
-      particlePositions[i3 + 1] < -params.radius ||
-      particlePositions[i3 + 1] > params.radius
-    ) {
-      particleData.velocity.y = -particleData.velocity.y; //if particle exits the square in y, flip the velocity
-    }
-    if (
-      particlePositions[i3 + 2] < -params.radius ||
-      particlePositions[i3 + 2] > params.radius
-    ) {
-      particleData.velocity.z = -particleData.velocity.z; //if particle exits the square in z, flip the velocity
+    const r = params.radius;
+    const x = particlePositions[i3];
+    const y = particlePositions[i3 + 1];
+    const z = particlePositions[i3 + 2];
+
+    const distFromOrigin = Math.sqrt(x * x + y * y + z * z);
+
+    if (distFromOrigin >= r) {
+      //if point hits sphere boundary, reverse it
+      particleData.velocity.x *= -1;
+      particleData.velocity.y *= -1;
+      particleData.velocity.z *= -1;
     }
 
     const connectionsUnderLimit =
       params.limitConnections &&
       particleData.numConnections < params.maxConnections;
+      
     if (connectionsUnderLimit || !params.limitConnections) {
       for (let j = i + 1; j < params.numParticles; j++) {
         //every particle before i has already been checked
@@ -385,15 +394,17 @@ const tick = () => {
   window.requestAnimationFrame(tick);
 };
 
-//tick();
+tick();
 
-
-const update = () =>{
-    // Update controls
-    controls.update();
+const update = () => {
+  const elapsedTime = clock.getElapsedTime();
+  //UPDATE GRADIENT MATERIAL TIME
+  planeMaterial.uniforms.time.value = elapsedTime;
+  // Update controls
+  controls.update();
   // Render
   renderer.render(scene, camera);
   // Call tick again on the next frame
   window.requestAnimationFrame(update);
-}
-update()
+};
+//update()

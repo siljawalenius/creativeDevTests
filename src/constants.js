@@ -5,7 +5,7 @@ const params = {
     lineOpacity: 0.3, //no longer necessary - used opacity prop on materia;s
     limitConnections: true,
     maxConnections: 20,
-    radius : 300, //length of each side of geometry
+    radius : 400, //length of each side of geometry
     inhaleLength : 4,
     exhaleLength: 4,
     holdLength: 4
