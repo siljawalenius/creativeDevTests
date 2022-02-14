@@ -4,12 +4,9 @@ import { MeshLine, MeshLineMaterial } from "three.meshline";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { params, maxParticles } from "./constants";
 import initGUI from "./functions";
-import planeVertexShader from "./shader/plane/vertex.glsl";
-import planeFragmentShader from "./shader/plane/fragment.glsl";
+import planeVertexShader from "./shader/sphere/vertex.glsl";
+import planeFragmentShader from "./shader/sphere/fragment.glsl";
 
-import { Line2 } from "./lines/Line2.js";
-import { LineMaterial } from "./lines/LineMaterial.js";
-import { LineGeometry } from "./lines/LineGeometry.js";
 
 import { gsap } from "gsap";
 
@@ -46,7 +43,8 @@ scene.add(light);
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.minDistance = 1000;
-controls.maxDistance = 2700;
+//controls.maxDistance = 2700;
+controls.maxDistance = 8000;
 controls.enableDamping = true;
 
 window.addEventListener("resize", () => {
@@ -71,13 +69,14 @@ const group = new THREE.Group();
 scene.add(group);
 
 //const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
-const sceneGeometry = new THREE.SphereGeometry(3000, 32, 32);
+const sceneGeometry = new THREE.SphereGeometry(3000, 50, 50);
 //const sceneGeometry = new THREE.PlaneGeometry(1000, 1000, 16, 16)
 
 // Material
 const planeMaterial = new THREE.ShaderMaterial({
   uniforms: {
     time: { value: 1.0 },
+    seed: {value: Math.random()}
   },
   vertexShader: planeVertexShader,
   fragmentShader: planeFragmentShader,
