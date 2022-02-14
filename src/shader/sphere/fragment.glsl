@@ -55,11 +55,20 @@ void main()
     float gradMovementY = 0.2 * sin(time);
     float gradMovementX = 0.25 * sin(time);
 
+    vec3 normNormal = normalize(vNormal) * 0.5 + 0.5;
+
+    // vec3 color4 = mix(
+    //     mix(color1, color2, vNormal.x + gradMovementX),
+    //     mix(color1, color3, vNormal.y + gradMovementX),
+    //     vNormal.z + gradMovementY
+    // );
+
     vec3 color4 = mix(
-        mix(color1, color2, vNormal.x * 0.5 + gradMovementX),
-        mix(color1, color3, vNormal.x + gradMovementX),
-        vNormal.y + gradMovementY
+        mix(color2, color1, normNormal.x + gradMovementX),
+        mix(color1, color3, normNormal.y + gradMovementX),
+        normNormal.z + gradMovementY
     );
+
 
     
     // float mixer1 = smoothstep(0.6, 1.2, vRadius);
