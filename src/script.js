@@ -69,7 +69,7 @@ const group = new THREE.Group();
 scene.add(group);
 
 //const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
-const sceneGeometry = new THREE.SphereGeometry(3000, 50, 50);
+const sceneGeometry = new THREE.SphereGeometry(3000, 64, 64);
 //const sceneGeometry = new THREE.PlaneGeometry(1000, 1000, 16, 16)
 
 // Material
