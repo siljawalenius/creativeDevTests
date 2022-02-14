@@ -24,7 +24,7 @@ void main()
     float halfR = vRadius/2.0;
 
     float mixVal1 = smoothstep(0.0, 0.7, halfR);
-    float mixVal2 = smoothstep(0.5, 1.5, vRadius);
+    float mixVal2 = smoothstep(0.7, 1.5, vRadius);
 
 
     vec3 color = mix(color3, color2, mixVal1);
