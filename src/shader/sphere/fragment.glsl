@@ -78,7 +78,7 @@ void main()
     float mixer2 = smoothstep(1.2, 1.6, vRadius);
     
     vec3 color = mix(color2, color4, mixer1);
-    color = mix(color, color3, mixer2);
+    color = mix(color, color1, mixer2);
     
     gl_FragColor=vec4(color,1.);
 } 
