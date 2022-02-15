@@ -30,8 +30,9 @@ const camera = new THREE.PerspectiveCamera(
   1,
   8000
 );
-camera.position.z = 1150;
-camera.position.y = 574;
+camera.position.z = 656.487;
+camera.position.y = -1000;
+camera.position.x = 119.274;
 
 camera.lookAt(0, 0, 0);
 scene.add(camera);
@@ -69,7 +70,7 @@ const group = new THREE.Group();
 scene.add(group);
 
 //const planeGeometry = new THREE.PlaneGeometry(4000, 4000, 32, 32);
-const sceneGeometry = new THREE.SphereGeometry(3000, 50, 50);
+const sceneGeometry = new THREE.SphereGeometry(3000, 64, 64);
 //const sceneGeometry = new THREE.PlaneGeometry(1000, 1000, 16, 16)
 
 // Material
@@ -232,7 +233,7 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(new THREE.Color(0xfc9797));
 
-initGUI({ boundingBox, pointCloud, linesShape }, particles);
+initGUI({ boundingBox, pointCloud, linesShape }, particles, camera);
 
 /**
  * Animate

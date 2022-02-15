@@ -57,11 +57,10 @@ void main()
     vec3 newPosition = position;
 
     float radius = 1.0;
-     
-    float noise = fbm(position * 0.25 + time * 0.1 + seed);
+    float noise = fbm(position * 0.1 + time * 0.05 + seed);
     //multiply each point by some noise
 
-    radius *= mix(0.5, 1.5, noise);
+    radius *= mix(0.8, 1.6, noise);
 
     newPosition *= radius;
 

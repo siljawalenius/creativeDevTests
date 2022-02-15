@@ -1,12 +1,12 @@
 import GUI from "lil-gui";
 import { maxParticles, params } from './constants'
 
-const initGUI = ({ boundingBox, pointCloud, linesShape}, particles) => {
+const initGUI = ({ boundingBox, pointCloud, linesShape}, particles, camera) => {
   // Debug
   const gui = new GUI();
-  // gui.add(camera.position, "x", 0, 2000, 0.001).name("cameraX");
-  // gui.add(camera.position, "y", 0, 2000, 0.001).name("cameraY");
-  // gui.add(camera.position, "z", 0, 4000, 0.001).name("cameraZ");
+   gui.add(camera.position, "x", -1000, 2000, 0.001).name("cameraX");
+   gui.add(camera.position, "y", -1000, 2000, 0.001).name("cameraY");
+   gui.add(camera.position, "z", 0, 4000, 0.001).name("cameraZ");
 
   gui.add(params, "maxDistance", 10, 400, 1);
  
